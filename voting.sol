@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.10;
+
+
+pragma solidity >=0.7.0 <0.9.0;
 
 interface IVotingContract{
 
@@ -13,35 +15,33 @@ interface IVotingContract{
     function getWinner() external returns(bytes32);
 }
 
-contract Balllot{
+contract Ballot{
     mapping(address => bool) public candidateVote;
-    uint public candidateTime;
+    uint public voteTime;
     address public creator;
     
 
     struct Candidate{
         bytes32 candidateId;
         uint voteCount;
+        uint voteTime;
     }
 
     Candidate[] public candidates;
     mapping(address => bool) public voter;
     
-    constructor(uint _candidateTime){
-        candidateTime = block.timestamp + _candidateTime;
+    constructor(){
         creator = msg.sender;
     }
 
     function addCandidate(bytes32 _candidateId) external returns(bool){
-        if(block.timestamp > candidateTime){
-            revert("Time has ended for adding candidate");
-        }
-
         require(msg.sender == creator, "You are not authorized");
-
+        require(block.timestamp <= voteTime + 180, "Time has ended for adding candidate");
+        
         candidates.push(Candidate({
             candidateId: _candidateId,
-            voteCount: 0
+            voteCount: 0,
+            voteTime : block.timestamp + 180
         }));
 
         return true;
@@ -50,10 +50,8 @@ contract Balllot{
 
     function voteCandidate(uint candidateId) external returns(bool){
         require(voter[msg.sender] != false, "You have previously voted");
-
-        if(block.timestamp > 2 * candidateTime){
-            revert("Time has ended for adding candidate");
-        }
+        
+        require(block.timestamp <= voteTime + 180, "Time has ended for adding candidate");
 
         voter[msg.sender] = true;
         candidates[candidateId].voteCount +=1;
